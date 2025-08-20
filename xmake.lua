@@ -1,35 +1,19 @@
 add_rules("mode.debug", "mode.release")
 
-rule("slint-compiler")
+rule("slint-source")
     set_extensions(".slint")
-
-    on_config(function (target)
-        local r = target:rule("c++.build")
-        if r then
-            r = r:clone()
-            r:add("deps", "@slint/compiler", {order = true})
-            target:rule_add(r)
-        end
-
-        local autogendir = path.join(target:autogendir(), "slint")
-        os.mkdir(autogendir)
+	on_config(function(target)
+		local autogendir = path.join(target:autogendir(), "slint")
         target:add("includedirs", autogendir)
-
-        import("lib.detect.find_program")
-        local slint_compiler = find_program("slint-compiler", {envs = os.joinenvs(os.getenvs(), target:pkgenvs())})
-        assert(slint_compiler, "could not find slint-compiler")
     end)
 
-    on_buildcmd_file(function (target, batchcmds, sourcefile, opt)
-        import("lib.detect.find_program")
-        local slint_compiler = find_program("slint-compiler", {envs = os.joinenvs(os.getenvs(), target:pkgenvs())})
-
-        local abs_path = path.join(target:scriptdir(), sourcefile)
-        local autogendir = path.join(target:autogendir(), "slint")
-        local output_path = path.join(autogendir, path.basename(abs_path) .. ".h")
-
-        batchcmds:vrunv(slint_compiler, {abs_path, "-o", output_path})
-        batchcmds:add_depfiles(sourcefile)
+    before_build_file(function (target, sourcefile, opt)
+		local autogendir = path.join(target:autogendir(), "slint")
+        local filename = path.basename(sourcefile)
+        local output = path.join(autogendir, filename .. ".h")
+        os.mkdir(autogendir)
+        os.execv("slint-compiler", {"-o", output, sourcefile})
+		return true
     end)
 rule_end()
 
@@ -47,7 +31,6 @@ package("slint")
 
     on_install(function (package)
         os.cp("*", package:installdir())
-        package:addenv("LD_LIBRARY_PATH", package:installdir("lib"))
     end)
 
     on_test(function (package)
@@ -71,6 +54,7 @@ target("libext2fm")
 	add_packages("e2fsprogs")
 	add_includedirs("include", "e2fsprogs/lib", "e2fsprogs/lib/ext2fs", "src")
     add_files("src/*.c")
+	set_prefixname("")
 target_end()
 
 target("ext2fm")
@@ -82,8 +66,10 @@ target_end()
 
 target("ext2fm-gui")
 	set_languages("c++20")
-	add_rules("slint-compiler")
+	add_rules("slint-source")
 	set_kind("binary")
 	add_packages("slint")
-	add_files("gui/src/*.cpp", "gui/ui/*.slint")
+	add_files("gui/ui/*.slint")
+	add_files("gui/src/*.cpp")
+	add_rpathdirs("@loader_path")
 target_end()
