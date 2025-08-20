@@ -1,0 +1,6 @@
+[submodule "e2tools"]
+	path = e2tools
+	url = git@github.com:e2tools/e2tools.git
+[submodule "e2fsprogs"]
+	path = e2fsprogs
+	url = git@github.com:tytso/e2fsprogs.git
