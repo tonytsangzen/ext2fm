@@ -34,7 +34,7 @@ static int mount_list_del(e2fs_t *mount){
 
 long get_entry_by_name(char *name, ext2_filsys *fs,  ext2_ino_t *root){
     for(int i = 0; i < sizeof(mount_list)/sizeof(fs_t*); i++){
-        if(mount_list[i] != NULL && (strcmp(name, mount_list[i]->dev) == 0 || strcmp(name, mount_list[i]->alias))){
+        if(mount_list[i] != NULL && (strlen(name) == 0 || strcmp(name, mount_list[i]->dev) == 0 || strcmp(name, mount_list[i]->alias))){
 			*fs = mount_list[i]->fs;
 			*root = mount_list[i]->root;
 			return 0;
@@ -79,10 +79,6 @@ static int parse(char*cmd, char* argc[], int max){
 		cmd++;
 	}
 
-	for(int i = 0; i < count; i++){
-		printf("%s ", argc[i]);
-	}
-	printf("\n");
 	argc[count] = NULL;
 	return count;
 }
